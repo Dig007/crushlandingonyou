@@ -69,12 +69,13 @@ func ApplyConfig(cfg *config.Config, force bool) {
 
 	updateUsers(cfg.Users)
 	updateProxies(cfg.Proxies, cfg.Providers)
-	updateRules(cfg.Rules)
+	updateRules(cfg.Rules, cfg.RuleProviders)
 	updateHosts(cfg.Hosts)
 	updateProfile(cfg)
 	updateGeneral(cfg.General, force)
 	updateDNS(cfg.DNS)
 	updateExperimental(cfg)
+	loadProvider(cfg.RuleProviders, cfg.Providers)
 }
 
 func GetGeneral() *config.General {
@@ -157,8 +158,40 @@ func updateProxies(proxies map[string]C.Proxy, providers map[string]provider.Pro
 	tunnel.UpdateProxies(proxies, providers)
 }
 
-func updateRules(rules []C.Rule) {
-	tunnel.UpdateRules(rules)
+func updateRules(rules []C.Rule, ruleProviders map[string]*provider.RuleProvider) {
+	tunnel.UpdateRules(rules, ruleProviders)
+}
+
+func loadProvider(ruleProviders map[string]*provider.RuleProvider, proxyProviders map[string]provider.ProxyProvider) {
+	load := func(pv provider.Provider) {
+		if pv.VehicleType() == provider.Compatible {
+			log.Infoln("Start initial compatible provider %s", pv.Name())
+		} else {
+			log.Infoln("Start initial provider %s", (pv).Name())
+		}
+
+		if err := (pv).Initial(); err != nil {
+			switch pv.Type() {
+			case provider.Proxy:
+				{
+					log.Warnln("initial proxy provider %s error: %v", (pv).Name(), err)
+				}
+			case provider.Rule:
+				{
+					log.Warnln("initial rule provider %s error: %v", (pv).Name(), err)
+				}
+
+			}
+		}
+	}
+
+	for _, proxyProvider := range proxyProviders {
+		load(proxyProvider)
+	}
+
+	for _, ruleProvider := range ruleProviders {
+		load(*ruleProvider)
+	}
 }
 
 func updateGeneral(general *config.General, force bool) {
