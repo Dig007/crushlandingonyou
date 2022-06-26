@@ -100,7 +100,7 @@ type Config struct {
 	Users         []auth.AuthUser
 	Proxies       map[string]C.Proxy
 	Providers     map[string]providerTypes.ProxyProvider
-	RuleProviders map[string]*providerTypes.RuleProvider
+	RuleProviders map[string]providerTypes.RuleProvider
 }
 
 type RawDNS struct {
@@ -386,8 +386,8 @@ func parseProxies(cfg *RawConfig) (proxies map[string]C.Proxy, providersMap map[
 	return proxies, providersMap, nil
 }
 
-func parseRules(cfg *RawConfig, proxies map[string]C.Proxy) ([]C.Rule, map[string]*providerTypes.RuleProvider, error) {
-	ruleProviders := map[string]*providerTypes.RuleProvider{}
+func parseRules(cfg *RawConfig, proxies map[string]C.Proxy) ([]C.Rule, map[string]providerTypes.RuleProvider, error) {
+	ruleProviders := map[string]providerTypes.RuleProvider{}
 
 	// parse rule provider
 	for name, mapping := range cfg.RuleProvider {
@@ -396,14 +396,14 @@ func parseRules(cfg *RawConfig, proxies map[string]C.Proxy) ([]C.Rule, map[strin
 			return nil, nil, err
 		}
 
-		ruleProviders[name] = &rp
+		ruleProviders[name] = rp
 		RP.SetRuleProvider(rp)
 	}
 
 	for _, provider := range ruleProviders {
-		log.Infoln("Start initial provider %s", (*provider).Name())
-		if err := (*provider).Initial(); err != nil {
-			return nil, nil, fmt.Errorf("initial rule provider %s error: %w", (*provider).Name(), err)
+		log.Infoln("Start initial provider %s", (provider).Name())
+		if err := (provider).Initial(); err != nil {
+			return nil, nil, fmt.Errorf("initial rule provider %s error: %w", (provider).Name(), err)
 		}
 	}
 
