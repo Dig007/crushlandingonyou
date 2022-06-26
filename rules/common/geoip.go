@@ -1,4 +1,4 @@
-package rules
+package common
 
 import (
 	"strings"
@@ -24,7 +24,11 @@ func (g *GEOIP) Match(metadata *C.Metadata) bool {
 	}
 
 	if strings.EqualFold(g.country, "LAN") {
-		return ip.IsPrivate()
+		return ip.IsPrivate() ||
+			ip.IsUnspecified() ||
+			ip.IsLoopback() ||
+			ip.IsMulticast() ||
+			ip.IsLinkLocalUnicast()
 	}
 	record, _ := mmdb.Instance().Country(ip)
 	return strings.EqualFold(record.Country.IsoCode, g.country)
@@ -46,12 +50,14 @@ func (g *GEOIP) ShouldFindProcess() bool {
 	return false
 }
 
-func NewGEOIP(country string, adapter string, noResolveIP bool) *GEOIP {
+func NewGEOIP(country string, adapter string, noResolveIP bool) (*GEOIP, error) {
 	geoip := &GEOIP{
 		country:     country,
 		adapter:     adapter,
 		noResolveIP: noResolveIP,
 	}
 
-	return geoip
+	return geoip, nil
 }
+
+var _ C.Rule = (*GEOIP)(nil)

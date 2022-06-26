@@ -1,4 +1,4 @@
-package rules
+package common
 
 import (
 	"strings"
@@ -7,8 +7,8 @@ import (
 )
 
 type Domain struct {
-	domain  string
-	adapter string
+	domain    string
+	adapter   string
 }
 
 func (d *Domain) RuleType() C.RuleType {
@@ -40,7 +40,7 @@ func (d *Domain) ShouldFindProcess() bool {
 
 func NewDomain(domain string, adapter string) *Domain {
 	return &Domain{
-		domain:  strings.ToLower(domain),
-		adapter: adapter,
+		domain:    strings.ToLower(domain),
+		adapter:   adapter,
 	}
 }

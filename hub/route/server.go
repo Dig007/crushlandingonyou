@@ -51,14 +51,14 @@ func Start(addr string, secret string) {
 
 	r := chi.NewRouter()
 
-	cors := cors.New(cors.Options{
+	corsM := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
 		AllowedMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
 		AllowedHeaders: []string{"Content-Type", "Authorization"},
 		MaxAge:         300,
 	})
 
-	r.Use(cors.Handler)
+	r.Use(corsM.Handler)
 	r.Group(func(r chi.Router) {
 		r.Use(authentication)
 
@@ -131,7 +131,7 @@ func authentication(next http.Handler) http.Handler {
 }
 
 func hello(w http.ResponseWriter, r *http.Request) {
-	render.JSON(w, r, render.M{"hello": "clash"})
+	render.JSON(w, r, render.M{"hello": "clash.meta"})
 }
 
 func traffic(w http.ResponseWriter, r *http.Request) {

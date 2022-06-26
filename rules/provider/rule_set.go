@@ -1,7 +1,8 @@
-package rules
+package provider
 
 import (
 	"fmt"
+
 	C "github.com/Dreamacro/clash/constant"
 	P "github.com/Dreamacro/clash/constant/provider"
 )
@@ -10,6 +11,11 @@ type RuleSet struct {
 	ruleProviderName string
 	adapter          string
 	ruleProvider     P.RuleProvider
+	noResolveIP      bool
+}
+
+func (rs *RuleSet) ShouldFindProcess() bool {
+	return false
 }
 
 func (rs *RuleSet) RuleType() C.RuleType {
@@ -28,12 +34,8 @@ func (rs *RuleSet) Payload() string {
 	return rs.getProviders().Name()
 }
 
-func (r *RuleSet) ShouldFindProcess() bool {
-	return false
-}
-
 func (rs *RuleSet) ShouldResolveIP() bool {
-	return rs.getProviders().ShouldResolveIP()
+	return !rs.noResolveIP && rs.getProviders().ShouldResolveIP()
 }
 func (rs *RuleSet) getProviders() P.RuleProvider {
 	if rs.ruleProvider == nil {
@@ -44,7 +46,7 @@ func (rs *RuleSet) getProviders() P.RuleProvider {
 	return rs.ruleProvider
 }
 
-func NewRuleSet(ruleProviderName string, adapter string) (*RuleSet, error) {
+func NewRuleSet(ruleProviderName string, adapter string, noResolveIP bool, parse func(tp, payload, target string, params []string) (parsed C.Rule, parseErr error)) (*RuleSet, error) {
 	rp, ok := RuleProviders()[ruleProviderName]
 	if !ok {
 		return nil, fmt.Errorf("rule set %s not found", ruleProviderName)
@@ -53,5 +55,6 @@ func NewRuleSet(ruleProviderName string, adapter string) (*RuleSet, error) {
 		ruleProviderName: ruleProviderName,
 		adapter:          adapter,
 		ruleProvider:     rp,
+		noResolveIP:      noResolveIP,
 	}, nil
 }

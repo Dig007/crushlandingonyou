@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"runtime"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/Dreamacro/clash/adapter"
@@ -20,7 +20,8 @@ import (
 	providerTypes "github.com/Dreamacro/clash/constant/provider"
 	"github.com/Dreamacro/clash/dns"
 	"github.com/Dreamacro/clash/log"
-	R "github.com/Dreamacro/clash/rule"
+	R "github.com/Dreamacro/clash/rules"
+	RP "github.com/Dreamacro/clash/rules/provider"
 	T "github.com/Dreamacro/clash/tunnel"
 
 	"gopkg.in/yaml.v3"
@@ -90,15 +91,15 @@ type Experimental struct{}
 
 // Config is clash config manager
 type Config struct {
-	General      *General
-	DNS          *DNS
-	Experimental *Experimental
-	Hosts        *trie.DomainTrie
-	Profile      *Profile
-	Rules        []C.Rule
-	Users        []auth.AuthUser
-	Proxies      map[string]C.Proxy
-	Providers    map[string]providerTypes.ProxyProvider
+	General       *General
+	DNS           *DNS
+	Experimental  *Experimental
+	Hosts         *trie.DomainTrie
+	Profile       *Profile
+	Rules         []C.Rule
+	Users         []auth.AuthUser
+	Proxies       map[string]C.Proxy
+	Providers     map[string]providerTypes.ProxyProvider
 	RuleProviders map[string]*providerTypes.RuleProvider
 }
 
@@ -142,15 +143,15 @@ type RawConfig struct {
 	Interface          string       `yaml:"interface-name"`
 	RoutingMark        int          `yaml:"routing-mark"`
 
-	ProxyProvider map[string]map[string]any `yaml:"proxy-providers"`
-	RuleProvider  map[string]map[string]interface{} `yaml:"rule-providers"`
-	Hosts         map[string]string         `yaml:"hosts"`
-	DNS           RawDNS                    `yaml:"dns"`
-	Experimental  Experimental              `yaml:"experimental"`
-	Profile       Profile                   `yaml:"profile"`
-	Proxy         []map[string]any          `yaml:"proxies"`
-	ProxyGroup    []map[string]any          `yaml:"proxy-groups"`
-	Rule          []string                  `yaml:"rules"`
+	ProxyProvider map[string]map[string]any         `yaml:"proxy-providers"`
+	RuleProvider  map[string]map[string]any         `yaml:"rule-providers"`
+	Hosts         map[string]string                 `yaml:"hosts"`
+	DNS           RawDNS                            `yaml:"dns"`
+	Experimental  Experimental                      `yaml:"experimental"`
+	Profile       Profile                           `yaml:"profile"`
+	Proxy         []map[string]any                  `yaml:"proxies"`
+	ProxyGroup    []map[string]any                  `yaml:"proxy-groups"`
+	Rule          []string                          `yaml:"rules"`
 }
 
 // Parse config
@@ -220,7 +221,7 @@ func ParseRawConfig(rawCfg *RawConfig) (*Config, error) {
 	config.Proxies = proxies
 	config.Providers = providers
 
-    rules, ruleProviders, err := parseRules(rawCfg, proxies)
+	rules, ruleProviders, err := parseRules(rawCfg, proxies)
 	if err != nil {
 		return nil, err
 	}
@@ -390,13 +391,13 @@ func parseRules(cfg *RawConfig, proxies map[string]C.Proxy) ([]C.Rule, map[strin
 
 	// parse rule provider
 	for name, mapping := range cfg.RuleProvider {
-		rp, err := R.ParseRuleProvider(name, mapping)
+		rp, err := RP.ParseRuleProvider(name, mapping, R.ParseRule)
 		if err != nil {
 			return nil, nil, err
 		}
 
 		ruleProviders[name] = &rp
-		R.SetRuleProvider(rp)
+		RP.SetRuleProvider(rp)
 	}
 
 	for _, provider := range ruleProviders {
@@ -446,7 +447,7 @@ func parseRules(cfg *RawConfig, proxies map[string]C.Proxy) ([]C.Rule, map[strin
 			return nil, nil, fmt.Errorf("rules[%d] [%s] error: %s", idx, line, parseErr.Error())
 		}
 
-			rules = append(rules, parsed)
+		rules = append(rules, parsed)
 	}
 	runtime.GC()
 
