@@ -32,6 +32,7 @@ type General struct {
 	Inbound
 	Controller
 	Mode        T.TunnelMode `json:"mode"`
+	UnifiedDelay bool
 	LogLevel    log.LogLevel `json:"log-level"`
 	IPv6        bool         `json:"ipv6"`
 	Interface   string       `json:"-"`
@@ -135,6 +136,7 @@ type RawConfig struct {
 	AllowLan           bool         `yaml:"allow-lan"`
 	BindAddress        string       `yaml:"bind-address"`
 	Mode               T.TunnelMode `yaml:"mode"`
+	UnifiedDelay       bool         `yaml:"unified-delay"`
 	LogLevel           log.LogLevel `yaml:"log-level"`
 	IPv6               bool         `yaml:"ipv6"`
 	ExternalController string       `yaml:"external-controller"`
@@ -170,6 +172,7 @@ func UnmarshalRawConfig(buf []byte) (*RawConfig, error) {
 		AllowLan:       false,
 		BindAddress:    "*",
 		Mode:           T.Rule,
+		UnifiedDelay:   false,
 		Authentication: []string{},
 		LogLevel:       log.INFO,
 		Hosts:          map[string]string{},
@@ -273,6 +276,7 @@ func parseGeneral(cfg *RawConfig) (*General, error) {
 			Secret:             cfg.Secret,
 		},
 		Mode:        cfg.Mode,
+		UnifiedDelay: cfg.UnifiedDelay,
 		LogLevel:    cfg.LogLevel,
 		IPv6:        cfg.IPv6,
 		Interface:   cfg.Interface,

@@ -16,6 +16,8 @@ import (
 	"go.uber.org/atomic"
 )
 
+var UnifiedDelay = atomic.NewBool(false)
+
 type Proxy struct {
 	C.ProxyAdapter
 	history *queue.Queue
@@ -114,6 +116,8 @@ func (p *Proxy) URLTest(ctx context.Context, url string) (t uint16, err error) {
 		}
 	}()
 
+	unifiedDelay := UnifiedDelay.Load()
+
 	addr, err := urlToMetadata(url)
 	if err != nil {
 		return
@@ -155,6 +159,15 @@ func (p *Proxy) URLTest(ctx context.Context, url string) (t uint16, err error) {
 	if err != nil {
 		return
 	}
+
+    if unifiedDelay {
+		start = time.Now()
+		resp, err = client.Do(req)
+		if err != nil {
+			return
+		}
+	}
+
 	resp.Body.Close()
 	t = uint16(time.Since(start) / time.Millisecond)
 	return

@@ -201,6 +201,7 @@ func updateGeneral(general *config.General, force bool) {
 	log.SetLevel(general.LogLevel)
 	tunnel.SetMode(general.Mode)
 	resolver.DisableIPv6 = !general.IPv6
+	adapter.UnifiedDelay.Store(general.UnifiedDelay)
 
 	dialer.DefaultInterface.Store(general.Interface)
 	dialer.DefaultRoutingMark.Store(int32(general.RoutingMark))
