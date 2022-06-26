@@ -60,6 +60,7 @@ func Rules() []C.Rule {
 func UpdateRules(newRules []C.Rule, rp map[string]provider.RuleProvider) {
 	configMux.Lock()
 	rules = newRules
+	ruleProviders = rp
 	configMux.Unlock()
 }
 
