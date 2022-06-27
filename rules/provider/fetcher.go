@@ -27,6 +27,7 @@ type fetcher struct {
 	hash      [16]byte
 	parser    parser
 	onUpdate  func(interface{}) error
+	interval  time.Duration
 }
 
 func (f *fetcher) Name() string {
@@ -49,6 +50,12 @@ func (f *fetcher) Initial() (interface{}, error) {
 		modTime := stat.ModTime()
 		f.updatedAt = &modTime
 		hasLocal = true
+		if f.interval != 0 && modTime.Add(f.interval).Before(time.Now()) {
+			defer func() {
+				log.Infoln("[Provider] %s's rules not updated for a long time, force refresh", f.Name())
+				go f.update()
+			}()
+		}
 	} else {
 		buf, err = f.vehicle.Read()
 	}
@@ -83,9 +90,6 @@ func (f *fetcher) Initial() (interface{}, error) {
 	}
 
 	f.hash = md5.Sum(buf)
-	if f.ticker != nil {
-		go f.pullLoop()
-	}
 
 	return rules, nil
 }
@@ -140,6 +144,7 @@ func newFetcher(name string, interval time.Duration, vehicle P.Vehicle, parser p
 		parser:   parser,
 		done:     make(chan struct{}, 1),
 		onUpdate: onUpdate,
+		interval: interval,
 	}
 }
 
@@ -159,28 +164,36 @@ func (f *fetcher) pullLoop() {
 	for {
 		select {
 		case <-f.ticker.C:
-			elm, same, err := f.Update()
-			if err != nil {
-				log.Warnln("[Provider] %s pull error: %s", f.Name(), err.Error())
+			same, err := f.update()
+			if same || err != nil {
 				continue
 			}
-
-			if same {
-				log.Debugln("[Provider] %s's rules doesn't change", f.Name())
-				continue
-			}
-
-			log.Infoln("[Provider] %s's rules update", f.Name())
-			if f.onUpdate != nil {
-				err := f.onUpdate(elm)
-				if err != nil {
-					log.Infoln("[Provider] %s update failed", f.Name())
-				}
-			}
-
 		case <-f.done:
 			f.ticker.Stop()
 			return
 		}
 	}
+}
+
+func (f *fetcher) update() (same bool, err error) {
+	elm, same, err := f.Update()
+	if err != nil {
+		log.Warnln("[Provider] %s pull error: %s", f.Name(), err.Error())
+		return
+	}
+
+	if same {
+		log.Debugln("[Provider] %s's rules doesn't change", f.Name())
+		return
+	}
+
+	log.Infoln("[Provider] %s's rules update", f.Name())
+	if f.onUpdate != nil {
+		err := f.onUpdate(elm)
+		if err != nil {
+			log.Infoln("[Provider] %s update failed", f.Name())
+		}
+	}
+
+	return
 }

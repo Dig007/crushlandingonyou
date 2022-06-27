@@ -33,8 +33,8 @@ var (
 	// Outbound Rule
 	mode = Rule
 
-	// default timeout for UDP session
-	udpTimeout = 60 * time.Second
+// default timeout for UDP session
+		udpTimeout  = 60 * time.Second
 )
 
 func init() {
